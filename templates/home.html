@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minimum Wage Visualization</title>
+</head>
+<body>
+    <h1>Select a State:</h1>
+    <form method="get" action="/visualize">
+        <label for="state">Choose a state:</label>
+        <select id="state" name="state">
+            {% for state in states %}
+                <option value="{{ state }}">{{ state }}</option>
+            {% endfor %}
+        </select>
+        <br>
+        <br>
+        <button type="submit">Visualize</button>
+    </form>
+</body>
+</html>

@@ -4,9 +4,13 @@ import os
 import sqlite3 as sl
 
 import pandas as pd
-from flask import Flask, redirect, render_template, request, session, url_for, send_file
+from flask import Flask, redirect, render_template, request, session, url_for, send_file, g
 from matplotlib.figure import Figure
 from sklearn.linear_model import LinearRegression
+from matplotlib.figure import Figure
+from io import BytesIO
+import base64
+import sqlite3
 
 app = Flask(__name__)
 app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
@@ -20,17 +24,16 @@ def home():
 @app.route("/submit_locale", methods=["POST"])
 def submit_locale():
     # session["locale"] = request.form["locale"].capitalize()
-    print(request.form['locale'])
-    session["locale"] = request.form["locale"]
-    if 'locale' not in session or session["locale"] == "":
+    session["state"] = request.form["state"]
+    if 'state' not in session or session["state"] == "":
         return redirect(url_for("home"))
-    if "data_request" not in request.form:
+    if "data_type" not in request.form:
         return redirect(url_for("home"))
-    session["data_request"] = request.form["data_request"]
-    return redirect(url_for("locale_current", data_request=session["data_request"], locale=session["locale"]))
+    session["data_type"] = request.form["data_type"]
+    return redirect(url_for("locale_current", data_request=session["data_type"], locale=session["state"]))
 
 
-@app.route("/api/coronavirus/<data_request>/<locale>")
+@app.route("/api/minwage/<data_request>/<locale>")
 def locale_current(data_request, locale):
     return render_template("locale.html", data_request=data_request, locale=locale, project=False)
 
@@ -51,76 +54,96 @@ def locale_projection(data_request, locale):
     return render_template("locale.html", data_request=data_request, locale=locale, project=True, date=session["date"])
 
 
+def plot_minimum_wage(state_data):
+    fig = Figure()
+    ax = fig.add_subplot(1, 1, 1)
+    ax.plot(state_data['Year'], state_data['State.Minimum.Wage'], marker='o', linestyle='-', color='b')
+    ax.set_xlabel('Year')
+    ax.set_ylabel('Minimum Wage')
+    ax.set_title(f'Minimum Wage in {state_data["State"].iloc[0]} Over the Years')
+
+    # Create a BytesIO buffer to save the image
+    img_buffer = BytesIO()
+    fig.savefig(img_buffer, format='png')  # Save the figure to the buffer
+    img_buffer.seek(0)  # Rewind the buffer to the start
+
+    # Encode the image in the buffer to a base64 string
+    img_str = base64.b64encode(img_buffer.read()).decode('utf-8')
+
+    # Close the figure to free up memory
+    fig.clf()
+
+    return img_str
+
 @app.route("/fig/<data_request>/<locale>")
 def fig(data_request, locale):
-    fig = create_figure(data_request, locale)
+    query = f"SELECT * FROM minimum_wage WHERE State = ?"
+    state_data = pd.read_sql_query(query, get_db(), params=(locale,))
+    
+    # Pass state_data directly to create_figure
+    img_str = create_figure(state_data)
 
-    # img = io.BytesIO()
-    # fig.savefig(img, format='png')
-    # img.seek(0)
-    # w = FileWrapper(img)
-    # # w = werkzeug.wsgi.wrap_file(img)
-    # return Response(w, mimetype="text/plain", direct_passthrough=True)
-
-    img = io.BytesIO()
-    fig.savefig(img, format='png')
-    img.seek(0)
+    # Convert the base64 string back to an image for display
+    img = BytesIO(base64.b64decode(img_str))
     return send_file(img, mimetype="image/png")
 
 
-def create_figure(data_request, locale):
-    df = db_create_dataframe(data_request, locale)
-    print(session)
-    if 'date' not in session:
-        fig = Figure()
-        ax = fig.add_subplot(1, 1, 1)
-        fig.suptitle(data_request.capitalize() + " cases in " + locale)
-        # fig, ax = plt.subplots(1, 1)
-        ax.plot(df["date"], df["cases"])
-        ax.set(xlabel="date", ylabel="cases")  # , xticks=range(0, len(df), 31))
-        return fig
-    else:
-        df['datemod'] = df['date'].map(datetime.datetime.toordinal)
-        y = df['cases'][-30:].values
-        X = df['datemod'][-30:].values.reshape(-1, 1)
-        # session['date'] = '11/11/20'  # REMOVE THIS LATER
-        dt = [[datetime.datetime.strptime(session['date'], '%m/%d/%y')]]
-        print('dt:', dt)
-        draw = datetime.datetime.toordinal(dt[0][0])
-        dord = datetime.datetime.fromordinal(int(draw))
-        regr = LinearRegression(fit_intercept=True, copy_X=True, n_jobs=2)
-        regr.fit(X, y)
-        pred = int(regr.predict([[draw]])[0])
+def create_figure(locale):
+    print("=======================================plotting figure=======================================")
+    # df = db_create_dataframe(data_request, locale)
+    # print(session)
+    # if 'date' not in session:
+    #     fig = Figure()
+    #     ax = fig.add_subplot(1, 1, 1)
+    #     fig.suptitle(data_request.capitalize() + " cases in " + locale)
+    #     # fig, ax = plt.subplots(1, 1)
+    #     ax.plot(df["date"], df["cases"])
+    #     ax.set(xlabel="date", ylabel="cases")  # , xticks=range(0, len(df), 31))
+    #     return fig
+    # else:
+    #     df['datemod'] = df['date'].map(datetime.datetime.toordinal)
+    #     y = df['cases'][-30:].values
+    #     X = df['datemod'][-30:].values.reshape(-1, 1)
+    #     # session['date'] = '11/11/20'  # REMOVE THIS LATER
+    #     dt = [[datetime.datetime.strptime(session['date'], '%m/%d/%y')]]
+    #     print('dt:', dt)
+    #     draw = datetime.datetime.toordinal(dt[0][0])
+    #     dord = datetime.datetime.fromordinal(int(draw))
+    #     regr = LinearRegression(fit_intercept=True, copy_X=True, n_jobs=2)
+    #     regr.fit(X, y)
+    #     pred = int(regr.predict([[draw]])[0])
 
-        # append() is removed in pandas 2.0, replace w/ concat() below
+    #     # append() is removed in pandas 2.0, replace w/ concat() below
 
-        # df = df.append({'date': dord,
-        #                 'cases': pred,
-        #                 'datemod': draw}, ignore_index=True)
+    #     # df = df.append({'date': dord,
+    #     #                 'cases': pred,
+    #     #                 'datemod': draw}, ignore_index=True)
 
-        # make a new dataframe for prediction
-        df_pred = pd.DataFrame({'date': dord,
-                                'cases': pred,
-                                'datemod': draw}, index=[0])
+    #     # make a new dataframe for prediction
+    #     df_pred = pd.DataFrame({'date': dord,
+    #                             'cases': pred,
+    #                             'datemod': draw}, index=[0])
 
-        # save lengths of dates and cases of original/historical data for diff colors below
-        orig_date_len = len(df['date'])
-        orig_cases_len = len(df['cases'])
+    #     # save lengths of dates and cases of original/historical data for diff colors below
+    #     orig_date_len = len(df['date'])
+    #     orig_cases_len = len(df['cases'])
 
-        # concat orig and prediction dataframes
-        df = pd.concat([df, df_pred])
+    #     # concat orig and prediction dataframes
+    #     df = pd.concat([df, df_pred])
 
-        fig = Figure()
-        ax = fig.add_subplot(1, 1, 1)
-        fig.suptitle('By ' + session['date'] + ', there will be ' + str(
-            pred) + ' ' + data_request.capitalize() + " cases in " + locale)
+    #     fig = Figure()
+    #     ax = fig.add_subplot(1, 1, 1)
+    #     fig.suptitle('By ' + session['date'] + ', there will be ' + str(
+    #         pred) + ' ' + data_request.capitalize() + " cases in " + locale)
 
-        # show the original/historical data in blue using slicing
-        ax.plot(df["date"][:orig_date_len], df["cases"][:orig_cases_len], color='blue')
-        # show the predicted data in orange, notice the - 1 since a line plot needs at least 2 points.
-        ax.plot(df['date'][orig_date_len - 1:], df['cases'][orig_cases_len - 1:], color='orange')
-        ax.set(xlabel="date", ylabel="cases")  # , xticks=range(0, len(df), 31))
-        return fig
+    #     # show the original/historical data in blue using slicing
+    #     ax.plot(df["date"][:orig_date_len], df["cases"][:orig_cases_len], color='blue')
+    #     # show the predicted data in orange, notice the - 1 since a line plot needs at least 2 points.
+    #     ax.plot(df['date'][orig_date_len - 1:], df['cases'][orig_cases_len - 1:], color='orange')
+    #     ax.set(xlabel="date", ylabel="cases")  # , xticks=range(0, len(df), 31))
+        # return fig
+    print("plotting figure")
+    return plot_minimum_wage(locale);
 
 
 def db_create_dataframe(data_request, locale):
@@ -160,6 +183,13 @@ def db_get_locales():
 
     conn.close()
     return locales
+
+def get_db():
+    db = getattr(g, '_database', None)
+    if db is None:
+        db = g._database = sqlite3.connect("minimum_wage.db")
+    return db
+
 
 
 # m = "SELECT * FROM time_series_confirmed WHERE `Country/Region`='France'"

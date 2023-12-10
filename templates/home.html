@@ -7,13 +7,18 @@
 </head>
 <body>
     <h1>Select a State:</h1>
-    <form method="get" action="/visualize">
+    <form method="post" action="/submit_locale">
         <label for="state">Choose a state:</label>
         <select id="state" name="state">
             {% for state in states %}
                 <option value="{{ state }}">{{ state }}</option>
             {% endfor %}
         </select>
+        <br>
+        <input type="radio" id="historic" name="data_type" value="historic" checked>
+        <label for="historic">Historic Data</label><br>
+        <input type="radio" id="prediction" name="data_type" value="prediction">
+        <label for="prediction">Future Prediction</label>
         <br>
         <br>
         <button type="submit">Visualize</button>

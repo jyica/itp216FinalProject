@@ -5,8 +5,8 @@
         <title>{{ locale }}</title>
     </head>
     <body>
-        <h1>COVID-19 cases in {{ locale }}: {{ data_request }} {% if project %} (projected) {% endif %} </h1>
-            <img src="{{ url_for('fig', data_request=data_request, locale=locale, project=project) }}" alt="Cases in {{ locale }}">
+        <h1>Minimum wage graph for {{ locale }}: {{ data_request }} {% if project %} (projected) {% endif %} </h1>
+            <img src="{{ url_for('fig', data_request=data_request, locale=locale, project=project) }}" alt="Minimum wage in {{ locale }}">
         <form action="/submit_projection" method="POST">
             <p>Select which date you'd like to project to:
                 <input type="text" name="date" placeholder="mm/dd/yy">

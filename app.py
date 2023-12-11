@@ -1,3 +1,9 @@
+# Jessica Fan
+# ITP 216, Fall 2023, Section 32081
+# Final Project
+# Description: 
+# A web application that allows user to view historical minimum wages across US territories, as well as future predictions
+
 import os
 import sqlite3 as sl
 

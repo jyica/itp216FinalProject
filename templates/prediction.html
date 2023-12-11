@@ -1,0 +1,13 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <title>{{ locale }}</title>
+    </head>
+    <body>
+        <h1>Minimum wage graph for {{ locale }}: {{ data_request }} </h1>
+            <img src="{{ url_for('prediction', locale=locale, years=years) }}" alt="Minimum wage prediction in {{ locale }}">
+
+            <p><a href="/templates/home.html" class="button">Back to Home</a></p>
+    </body>
+</html>

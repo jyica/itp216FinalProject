@@ -26,9 +26,9 @@ conn.commit()  # don't forget to commit changes before continuing
 
 # Use pandas to read the CSV to df
 # Select just the columns you want using optional use columns param
-df = pd.read_csv('minimum_wage.csv', usecols=['Year', 'State', 'State.Minimum.Wage'], encoding='utf-8')
+df = pd.read_csv('minimum_wage.csv', usecols=['Year', 'State', 'MinimumWage'], encoding='utf-8')
 # drop nulls just like pandas hw
-df = df[df["State.Minimum.Wage"].notnull()]
+df = df[df["MinimumWage"].notnull()]
 print('First 3 df results:')
 print(df.head(3))
 

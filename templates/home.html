@@ -6,19 +6,24 @@
     <title>Minimum Wage Visualization</title>
 </head>
 <body>
-    <h1>Select a State:</h1>
+    <h1>Minimum Wage Visualization</h1>
+    <h2>This database contains the recorded minimum wage across all U.S. states and territories from the year 1968 to 2020. </h2>
+    <h2>For reference, the average minimum wage across all states/territories in 2020 was <span style="color: blue;">${{ wage }}</span></h2>
     <form method="post" action="/submit_locale">
-        <label for="state">Choose a state:</label>
+        <p>Choose a state/territory: </p>
+        <!-- <label for="state">Choose a state:</label> -->
         <select id="state" name="state">
             {% for state in states %}
                 <option value="{{ state }}">{{ state }}</option>
             {% endfor %}
         </select>
         <br>
+        <br>
+        <p>Choose a viewing option:</p>
         <input type="radio" id="historic" name="data_type" value="historic" checked>
-        <label for="historic">Historic Data</label><br>
+        <label for="historic">Historic Overview</label><br>
         <input type="radio" id="prediction" name="data_type" value="prediction">
-        <label for="prediction">Future Prediction</label>
+        <label for="prediction">Future Prediction (50 years)</label>
         <br>
         <br>
         <button type="submit">Visualize</button>
